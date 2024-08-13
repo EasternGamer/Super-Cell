@@ -125,6 +125,9 @@ mod tests {
     use std::thread::sleep;
     use std::time::Duration;
     use super::*;
+    
+    const TEST_COUNT : usize = 5;
+    static COUNT: SuperCell<usize> = SuperCell::new(0);
 
     struct Test {
         x : usize,
@@ -137,7 +140,7 @@ mod tests {
         *result.get_mut() = 11;
         assert_eq!(*result.get(), 11);
         assert_eq!(*result.get_mut(), 11);
-        println!("1/4: Mutability for Primitive Successful");
+        println!("{}/{TEST_COUNT}: Mutability for Primitive Successful", *COUNT.get());
     }
 
     #[test]
@@ -158,7 +161,8 @@ mod tests {
 
         assert_eq!(result.get_mut().x, 100);
         assert_eq!(result.get_mut().list, list);
-        println!("2/4: Mutability for Complex Struct Successful");
+        *COUNT.get_mut() += 1;
+        println!("{}/{TEST_COUNT}: Mutability for Complex Struct Successful", *COUNT.get());
     }
 
     #[test]
@@ -171,7 +175,8 @@ mod tests {
         for value in result.get() {
             assert_eq!(*value, 9)
         }
-        println!("3/4: Mutability for Cells as Arrays Successful");
+        *COUNT.get_mut() += 1;
+        println!("{}/{TEST_COUNT}: Mutability for Cells as Arrays Successful", *COUNT.get());
     }
 
     #[test]
@@ -179,9 +184,9 @@ mod tests {
         let result = SuperCell::new(10);
         thread::scope(|x| {
             let reference = result.get_mut();
-            let handle = x.spawn(|| { 
+            let handle = x.spawn(|| {
                 sleep(Duration::from_millis(10));
-                *reference = 11; 
+                *reference = 11;
             });
             assert_eq!(*result.get(), 10);
             assert_eq!(*result.get_mut(), 10);
@@ -191,6 +196,20 @@ mod tests {
         });
         assert_eq!(*result.get(), 11);
         assert_eq!(*result.get_mut(), 11);
-        println!("4/4: Async Mutability for Cells as Arrays Successful");
+        *COUNT.get_mut() += 1;
+        println!("{}/{TEST_COUNT}: Async Mutability for Cells as Arrays Successful", *COUNT.get());
+    }
+
+    #[test]
+    fn multiple_mutable_references() {
+        let result = SuperCell::new(10);
+        let ref1 = result.get_mut();
+        let ref2 = result.get_mut();
+        let ref3 = result.get();
+        *ref1 = 11;
+        assert_eq!(*ref1, *ref2);
+        assert_eq!(*ref3, *ref2);
+        *COUNT.get_mut() += 1;
+        println!("{}/{TEST_COUNT}: Multiple Mutability for Cell Successful", *COUNT.get());
     }
 }
