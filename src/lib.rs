@@ -2,7 +2,8 @@ use std::cell::UnsafeCell;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
-use serde::{Deserialize, Serialize, Serializer};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Modified version of `Cell`
 #[repr(transparent)]
@@ -112,14 +113,17 @@ impl <T : Serialize> Serialize for SuperCell<T> {
 }
 
 #[cfg(feature = "serde")]
-impl <T : Deserialize> Deserialize for SuperCell<T> {
-    fn deserialize<D : Deserialize>(deserialize: D) -> Result<D::Ok, D::Error> {
-        T::deserialize(deserialize).map(SuperCell::new)
+impl <'de,T : Deserialize<'de>> Deserialize<'de> for SuperCell<T> {
+    fn deserialize<D : Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        T::deserialize(deserializer).map(SuperCell::new)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::thread;
+    use std::thread::sleep;
+    use std::time::Duration;
     use super::*;
 
     struct Test {
@@ -133,6 +137,7 @@ mod tests {
         *result.get_mut() = 11;
         assert_eq!(*result.get(), 11);
         assert_eq!(*result.get_mut(), 11);
+        println!("1/4: Mutability for Primitive Successful");
     }
 
     #[test]
@@ -153,6 +158,7 @@ mod tests {
 
         assert_eq!(result.get_mut().x, 100);
         assert_eq!(result.get_mut().list, list);
+        println!("2/4: Mutability for Complex Struct Successful");
     }
 
     #[test]
@@ -165,5 +171,26 @@ mod tests {
         for value in result.get() {
             assert_eq!(*value, 9)
         }
+        println!("3/4: Mutability for Cells as Arrays Successful");
+    }
+
+    #[test]
+    fn async_mutability() {
+        let result = SuperCell::new(10);
+        thread::scope(|x| {
+            let reference = result.get_mut();
+            let handle = x.spawn(|| { 
+                sleep(Duration::from_millis(10));
+                *reference = 11; 
+            });
+            assert_eq!(*result.get(), 10);
+            assert_eq!(*result.get_mut(), 10);
+            handle.join().expect("Failed to join thread!");
+            assert_eq!(*result.get(), 11);
+            assert_eq!(*result.get_mut(), 11);
+        });
+        assert_eq!(*result.get(), 11);
+        assert_eq!(*result.get_mut(), 11);
+        println!("4/4: Async Mutability for Cells as Arrays Successful");
     }
 }

@@ -1,11 +1,13 @@
 [package]
 name = "super_cell"
 version = "0.1.0"
-license = ""
+license = "MIT"
 authors = ["EasternGamer"]
 edition = "2021"
 description = "A super (unsafe) cell that also implements send and sync regardless of the inner type's send/sync."
 keywords = ["unsafe", "cell", "mutability", "parallel"]
+repository = "https://github.com/EasternGamer/super_cell"
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1.0", optional = true, features = ["derive"] }
