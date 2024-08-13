@@ -8,6 +8,9 @@ description = "A super (unsafe) cell that also implements send and sync regardle
 keywords = ["unsafe", "cell", "mutability", "parallel"]
 repository = "https://github.com/EasternGamer/super_cell"
 readme = "README.md"
+exclude = [
+    ".idea/*"
+]
 
 [dependencies]
 serde = { version = "1.0", optional = true, features = ["derive"] }
